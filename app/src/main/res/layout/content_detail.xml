@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Master layout. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:background="@android:color/white">
+
+        <TextView style="@style/MovieTitle"
+            android:id="@+id/movie_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageView style="@style/PosterStyle"
+                android:id="@+id/movie_poster"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <TextView style="@style/LabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text="@string/release_date_label"/>
+
+                <TextView style="@style/ReleaseDateStyle"
+                    android:id="@+id/movie_release_date"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="3" />
+
+
+                <TextView style="@style/LabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text="@string/rating_label"/>
+
+                <TextView style="@style/RatingStyle"
+                    android:id="@+id/movie_rating"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="3" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <TextView style="@style/OverviewTextStyle"
+            android:id="@+id/movie_overview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+</ScrollView>
