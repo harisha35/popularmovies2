@@ -2,6 +2,9 @@ package com.harish.android.popularmovies;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.net.Uri;
@@ -13,6 +16,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
+
+import com.harish.android.popularmovies.data.MovieContract;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,8 +37,30 @@ import java.util.ArrayList;
 public class MovieListFragment extends Fragment {
 
     private static ArrayList<String> moviesData = new ArrayList<>();
+    private static boolean mTwoPane = MainActivity.mTwoPane;
+    private static final String DETAIL_FRAGMENT_TAG = "DFTAG";
+
+    private static final String ID = "movie_id";
+    private static final String[] FAVOURITES_COLUMNS = {
+            MovieContract.FavouriteMovieEntry.COLUMN_MOVIE_ID,
+            MovieContract.FavouriteMovieEntry.COLUMN_MOVIE_TITLE,
+            MovieContract.FavouriteMovieEntry.COLUMN_MOVIE_POSTER,
+            MovieContract.FavouriteMovieEntry.COLUMN_MOVIE_SYNOPSIS,
+            MovieContract.FavouriteMovieEntry.COLUMN_MOVIE_USER_RATING,
+            MovieContract.FavouriteMovieEntry.COLUMN_MOVIE_RELEASE_DATE
+    };
+
+    // These indices are tied to FAVOURITES_COLUMNS.  If FAVOURITES_COLUMNS changes, these
+    // must change.
+    static final int COL_MOVIE_ID = 0;
+    static final int COL_MOVIE_TITLE = 1;
+    static final int COL_MOVIE_POSTER = 2;
+    static final int COL_MOVIE_SYNOPSIS = 3;
+    static final int COL_MOVIE_USER_RATING = 4;
+    static final int COL_MOVIE_RELEASE_DATE = 5;
 
     private ImageListAdapter imageListAdapter;
+    final String SEPERATOR = " ### ";
 
     public MovieListFragment() {
     }
@@ -58,10 +85,25 @@ public class MovieListFragment extends Fragment {
 
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                String movieData = imageListAdapter.getItem(position).toString();
-                Intent intent = new Intent(getActivity(), MovieDetailActivity.class)
-                        .putExtra(Intent.EXTRA_TEXT, movieData);
-                startActivity(intent);
+
+                if (mTwoPane) {
+                    // In two-pane mode, show the detail view in this activity by
+                    // adding or replacing the detail fragment using a
+                    // fragment transaction.
+                    Bundle args = new Bundle();
+
+                    DetailFragment fragment = new DetailFragment();
+                    fragment.setArguments(args);
+
+                    getActivity().getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.movie_detail_container, fragment, DETAIL_FRAGMENT_TAG)
+                            .commit();
+                } else {
+                    String movieData = imageListAdapter.getItem(position).toString();
+                    Intent intent = new Intent(getActivity(), MovieDetailActivity.class)
+                            .putExtra(Intent.EXTRA_TEXT, movieData);
+                    startActivity(intent);
+                }
             }
         });
 
@@ -70,8 +112,17 @@ public class MovieListFragment extends Fragment {
     }
 
     private void updateList() {
-        FetchMoviesTask moviesTask = new FetchMoviesTask();
-        moviesTask.execute();
+        SharedPreferences sharedPrefs =
+                PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String sortType = sharedPrefs.getString(
+                getString(R.string.pref_sort_key),
+                getString(R.string.pref_units_popularity));
+        if(sortType.equals(getString(R.string.pref_units_favorites))) {
+            fetchFavourites();
+        } else {
+            FetchMoviesTask moviesTask = new FetchMoviesTask();
+            moviesTask.execute();
+        }
     }
 
     @Override
@@ -80,13 +131,41 @@ public class MovieListFragment extends Fragment {
         updateList();
     }
 
+    private void fetchFavourites() {
+
+        ArrayList<Bitmap> images = new ArrayList<>();
+        Cursor cursor = getContext().getContentResolver().query(MovieContract.FavouriteMovieEntry.CONTENT_URI, FAVOURITES_COLUMNS, null, null, ID);
+        String[] resultStrs = new String[cursor.getCount()];
+        int i = 0;
+        while(cursor.moveToNext()) {
+            long id = cursor.getLong(COL_MOVIE_ID);
+            String title = cursor.getString(COL_MOVIE_TITLE);
+            String posterPath = "";
+            String releaseDate = cursor.getString(COL_MOVIE_RELEASE_DATE);
+            String voteAverage = String.valueOf(cursor.getFloat(COL_MOVIE_USER_RATING));
+            String overview = cursor.getString(COL_MOVIE_SYNOPSIS);
+            resultStrs[i] = id + SEPERATOR + title + SEPERATOR + posterPath + SEPERATOR + releaseDate + SEPERATOR + voteAverage + SEPERATOR + overview;
+            i++;
+
+            byte[] image = cursor.getBlob(COL_MOVIE_POSTER);
+            if(image != null) {
+                images.add(BitmapFactory.decodeByteArray(image, 0, image.length));
+            }
+        }
+        imageListAdapter.clear();
+        imageListAdapter.setImages(images);
+        for (String movie : resultStrs) {
+            imageListAdapter.add(movie);
+        }
+        cursor.close();
+    }
+
     public class FetchMoviesTask extends AsyncTask<Void, Void, String[]> {
 
         private final String LOG_TAG = FetchMoviesTask.class.getSimpleName();
 
         @Override
         protected String[] doInBackground(Void... params) {
-            // TODO : remove the zip code thing
 
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
@@ -112,7 +191,6 @@ public class MovieListFragment extends Fragment {
                         .build();
 
                 URL url = new URL(builtUri.toString());
-                Log.i(LOG_TAG, builtUri.toString());
 
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
@@ -170,13 +248,13 @@ public class MovieListFragment extends Fragment {
 
             // These are the names of the JSON objects that need to be extracted.
             final String RESULT_LIST = "results";
+            final String ID = "id";
             final String TITLE = "title";
             final String POSTER_PATH = "poster_path";
             final String RELEASE_DATE = "release_date";
             final String OVERVIEW = "overview";
             final String VOTE_AVERAGE = "vote_average";
             final String MOVIE_POSTER_BASE_URL = "http://image.tmdb.org/t/p/w500";
-            final String SEPERATOR = " ### ";
 
             JSONObject movieJson = new JSONObject(moviesJsonStr);
             JSONArray moviesArray = movieJson.getJSONArray(RESULT_LIST);
@@ -186,14 +264,14 @@ public class MovieListFragment extends Fragment {
             for (int i = 0; i < moviesArray.length(); i++) {
 
                 JSONObject movieObject = moviesArray.getJSONObject(i);
+                long id = movieObject.getLong(ID);
                 String title = movieObject.getString(TITLE);
                 String posterPath = MOVIE_POSTER_BASE_URL + movieObject.getString(POSTER_PATH);
                 String releaseDate = movieObject.getString(RELEASE_DATE);
                 String voteAverage = movieObject.getString(VOTE_AVERAGE);
                 String overview = movieObject.getString(OVERVIEW);
 
-
-                resultStrs[i] = title + SEPERATOR + posterPath + SEPERATOR + releaseDate + SEPERATOR + voteAverage + SEPERATOR + overview;
+                resultStrs[i] = id + SEPERATOR + title + SEPERATOR + posterPath + SEPERATOR + releaseDate + SEPERATOR + voteAverage + SEPERATOR + overview;
                 Log.d(LOG_TAG, resultStrs[i]);
             }
             return resultStrs;
@@ -208,6 +286,5 @@ public class MovieListFragment extends Fragment {
                 }
             }
         }
-
     }
 }

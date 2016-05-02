@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Popular Movies</string>
+    <string name="content_authority">com.harish.android.popularmovies.app</string>
     <string name="action_settings">Settings</string>
+    <string name="action_favorite">Add to Favourites</string>
+    <string name="action_share">Share</string>
 
     <string name="title_activity_detail">Movie Detail</string>
 
@@ -13,8 +16,13 @@
 
     <string name="pref_sort_label_popularity">Most Popular</string>
     <string name="pref_sort_label_user_rating">Highest Rated</string>
+    <string name="pref_sort_label_favorites">Favorites</string>
 
     <string name="pref_units_popularity">popularity.desc</string>
     <string name="pref_units_user_rating">vote_average.desc</string>
+    <string name="pref_units_favorites">favorites</string>
+
+    <string name="trailers_label">Trailers:</string>
+    <string name="reviews_label">Reviews:</string>
 
 </resources>

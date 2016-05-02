@@ -4,10 +4,12 @@
     <string-array name="pref_units_options">
         <item>@string/pref_sort_label_popularity</item>
         <item>@string/pref_sort_label_user_rating</item>
+        <item>@string/pref_sort_label_favorites</item>
     </string-array>
 
     <string-array name="pref_units_values">
         <item>@string/pref_units_popularity</item>
         <item>@string/pref_units_user_rating</item>
+        <item>@string/pref_units_favorites</item>
     </string-array>
 </resources>
