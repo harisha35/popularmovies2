@@ -49,6 +49,8 @@ public class DetailFragment extends Fragment {
     private String REVIEW_LABEL = "review";
     private CustomAdapter mTrailerAdapter;
     private CustomAdapter mReviewAdapter;
+    static final String DETAIL_URI = "URI";
+    String movieData = null;
 
     private static final String ID = "movie_id";
     static final int COL_MOVIE_POSTER = 0;
@@ -59,6 +61,22 @@ public class DetailFragment extends Fragment {
         setHasOptionsMenu(true);
     }
 
+    public static DetailFragment newInstance(int index) {
+        DetailFragment detailFragment = new DetailFragment();
+
+        // Supply index input as an argument.
+        Bundle args = new Bundle();
+        args.putInt("index", index);
+        detailFragment.setArguments(args);
+
+        return detailFragment;
+    }
+
+    public void setData(String movieData) {
+        this.movieData = movieData;
+        updateView(movieData, getView());
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -66,67 +84,74 @@ public class DetailFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.content_detail, container, false);
 
         Intent intent = getActivity().getIntent();
-        if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) {
-            movieDataStr = intent.getStringExtra(Intent.EXTRA_TEXT);
-
-            String[] movieData = movieDataStr.split(SEPERATOR);
-            String movieId = movieData[0];
-            String movieTitle = movieData[1];
-            String moviePoster = movieData[2];
-            String movieRelease = movieData[3];
-            String movieUserRating = movieData[4];
-            String movieOverview;
-
-            // The following check is to detect if movie's overview is not available
-            if (movieData.length > 5) {
-                movieOverview = movieData[5];
+        if ((intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) || movieData != null) {
+            if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) {
+                movieDataStr = intent.getStringExtra(Intent.EXTRA_TEXT);
             } else {
-                movieOverview = OVERVIEW_UNAVAILABLE;
+                movieDataStr = movieData;
             }
-
-            ((TextView) rootView.findViewById(R.id.movie_title))
-                    .setText(movieTitle);
-            ((TextView) rootView.findViewById(R.id.movie_overview))
-                    .setText(movieOverview);
-            ((TextView) rootView.findViewById(R.id.movie_release_date))
-                    .setText(movieRelease);
-            ((TextView) rootView.findViewById(R.id.movie_rating))
-                    .setText(movieUserRating);
-            Cursor cursor = getActivity().getContentResolver().query(MovieContract.FavouriteMovieEntry.CONTENT_URI,
-                    new String[]{MovieContract.FavouriteMovieEntry.COLUMN_MOVIE_POSTER}, ID + "=?", new String[]{movieId}, ID);
-
-            if (moviePoster.isEmpty()) {
-                if(cursor.getCount() >= 1) {
-                    cursor.moveToFirst();
-                    byte[] image = cursor.getBlob(COL_MOVIE_POSTER);
-                    ((ImageView) rootView.findViewById(R.id.movie_poster)).setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.length));
-                }
-
-            } else {
-                Picasso
-                        .with(getContext())
-                        .load(moviePoster)
-                        .error(R.drawable.notfound)
-                        .into((ImageView) rootView.findViewById(R.id.movie_poster));
-            }
-
-            cursor.close();
-
-            FetchMovieDetailsTask movieTrailerDetailsTask = new FetchMovieDetailsTask();
-            movieTrailerDetailsTask.execute(movieId, TRAILER_LABEL);
-
-            mTrailerAdapter = new CustomAdapter(getActivity(), new ArrayList<String>(), true);
-            ListView trailersList = (ListView) rootView.findViewById(R.id.listview_trailers);
-            trailersList.setAdapter(mTrailerAdapter);
-
-            FetchMovieDetailsTask movieReviewDetailsTask = new FetchMovieDetailsTask();
-            movieReviewDetailsTask.execute(movieId, REVIEW_LABEL);
-
-            mReviewAdapter = new CustomAdapter(getActivity(), new ArrayList<String>(), false);
-            ListView reviewsList = (ListView) rootView.findViewById(R.id.listview_reviews);
-            reviewsList.setAdapter(mReviewAdapter);
+            updateView(movieDataStr, rootView);
         }
         return rootView;
+    }
+
+    public void updateView(String movieDataStr, View rootView) {
+        String[] movieData = movieDataStr.split(SEPERATOR);
+        String movieId = movieData[0];
+        String movieTitle = movieData[1];
+        String moviePoster = movieData[2];
+        String movieRelease = movieData[3];
+        String movieUserRating = movieData[4];
+        String movieOverview;
+
+        // The following check is to detect if movie's overview is not available
+        if (movieData.length > 5) {
+            movieOverview = movieData[5];
+        } else {
+            movieOverview = OVERVIEW_UNAVAILABLE;
+        }
+
+        ((TextView) rootView.findViewById(R.id.movie_title))
+                .setText(movieTitle);
+        ((TextView) rootView.findViewById(R.id.movie_overview))
+                .setText(movieOverview);
+        ((TextView) rootView.findViewById(R.id.movie_release_date))
+                .setText(movieRelease);
+        ((TextView) rootView.findViewById(R.id.movie_rating))
+                .setText(movieUserRating);
+        Cursor cursor = getActivity().getContentResolver().query(MovieContract.FavouriteMovieEntry.CONTENT_URI,
+                new String[]{MovieContract.FavouriteMovieEntry.COLUMN_MOVIE_POSTER}, ID + "=?", new String[]{movieId}, ID);
+
+        if (moviePoster.isEmpty()) {
+            if(cursor.getCount() >= 1) {
+                cursor.moveToFirst();
+                byte[] image = cursor.getBlob(COL_MOVIE_POSTER);
+                ((ImageView) rootView.findViewById(R.id.movie_poster)).setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.length));
+            }
+
+        } else {
+            Picasso
+                    .with(getContext())
+                    .load(moviePoster)
+                    .error(R.drawable.notfound)
+                    .into((ImageView) rootView.findViewById(R.id.movie_poster));
+        }
+
+        cursor.close();
+
+        FetchMovieDetailsTask movieTrailerDetailsTask = new FetchMovieDetailsTask();
+        movieTrailerDetailsTask.execute(movieId, TRAILER_LABEL);
+
+        mTrailerAdapter = new CustomAdapter(getActivity(), new ArrayList<String>(), true);
+        ListView trailersList = (ListView) rootView.findViewById(R.id.listview_trailers);
+        trailersList.setAdapter(mTrailerAdapter);
+
+        FetchMovieDetailsTask movieReviewDetailsTask = new FetchMovieDetailsTask();
+        movieReviewDetailsTask.execute(movieId, REVIEW_LABEL);
+
+        mReviewAdapter = new CustomAdapter(getActivity(), new ArrayList<String>(), false);
+        ListView reviewsList = (ListView) rootView.findViewById(R.id.listview_reviews);
+        reviewsList.setAdapter(mReviewAdapter);
     }
 
     @Override

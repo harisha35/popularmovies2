@@ -1,6 +1,6 @@
 package com.harish.android.popularmovies;
 
-import android.content.Intent;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -37,8 +37,8 @@ import java.util.ArrayList;
 public class MovieListFragment extends Fragment {
 
     private static ArrayList<String> moviesData = new ArrayList<>();
-    private static boolean mTwoPane = MainActivity.mTwoPane;
-    private static final String DETAIL_FRAGMENT_TAG = "DFTAG";
+
+    private final String LOG_TAG = MovieListFragment.class.getSimpleName();
 
     private static final String ID = "movie_id";
     private static final String[] FAVOURITES_COLUMNS = {
@@ -85,29 +85,11 @@ public class MovieListFragment extends Fragment {
 
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-
-                if (mTwoPane) {
-                    // In two-pane mode, show the detail view in this activity by
-                    // adding or replacing the detail fragment using a
-                    // fragment transaction.
-                    Bundle args = new Bundle();
-
-                    DetailFragment fragment = new DetailFragment();
-                    fragment.setArguments(args);
-
-                    getActivity().getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.movie_detail_container, fragment, DETAIL_FRAGMENT_TAG)
-                            .commit();
-                } else {
-                    String movieData = imageListAdapter.getItem(position).toString();
-                    Intent intent = new Intent(getActivity(), MovieDetailActivity.class)
-                            .putExtra(Intent.EXTRA_TEXT, movieData);
-                    startActivity(intent);
-                }
+                Log.i(LOG_TAG, "clicked position " + position);
+                String movieData = imageListAdapter.getItem(position).toString();
+                ((OnSelectListener) getActivity()).showDetails(movieData);
             }
         });
-
-
         return rootView;
     }
 
@@ -286,5 +268,9 @@ public class MovieListFragment extends Fragment {
                 }
             }
         }
+    }
+
+    public interface OnSelectListener {
+        void showDetails(String data);
     }
 }

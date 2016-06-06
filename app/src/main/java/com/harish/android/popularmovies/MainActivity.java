@@ -7,9 +7,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements MovieListFragment.OnSelectListener {
 
     private final String LOG_TAG = MainActivity.class.getSimpleName();
+    private static final String DETAILFRAGMENT_TAG = "DFTAG";
 
     static boolean mTwoPane;
 
@@ -28,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
             // fragment transaction.
             if (savedInstanceState == null) {
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.movie_detail_container, new DetailFragment())
+                        .replace(R.id.movie_detail_container, new DetailFragment(), DETAILFRAGMENT_TAG)
                         .commit();
             }
         } else {
@@ -59,5 +60,19 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void showDetails(String movieData) {
+        if(mTwoPane) {
+            DetailFragment detailFragment = (DetailFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.movie_detail_container);
+            detailFragment.setData(movieData);
+        } else {
+            Intent intent = new Intent(getApplicationContext(),
+                    MovieDetailActivity.class);
+            intent.putExtra(Intent.EXTRA_TEXT, movieData);
+            startActivity(intent);
+        }
     }
 }
